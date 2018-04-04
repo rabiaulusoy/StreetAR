@@ -1,8 +1,4 @@
-package com.marmara.streetar.POJO;
-
-/**
- * Created by r_rab on 3/13/2018.
- */
+package com.marmara.streetar.model;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -10,6 +6,11 @@ import com.google.gson.annotations.SerializedName;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Created by Parth Dave on 31/3/17.
+ * Spaceo Technologies Pvt Ltd.
+ * parthd.spaceo@gmail.com
+ */
 public class Result {
 
     @SerializedName("geometry")

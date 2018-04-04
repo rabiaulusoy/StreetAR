@@ -1,6 +1,7 @@
 package com.marmara.streetar.main;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Sensor;
@@ -35,13 +36,13 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.marmara.streetar.POJO.Example;
+import com.google.android.gms.location.LocationServices;
+import com.marmara.streetar.MyApplication;
+import com.marmara.streetar.model.NearByApiResponse;
 import com.marmara.streetar.R;
-import com.marmara.streetar.RetrofitMaps;
 import com.marmara.streetar.model.ARPoint;
 
 import java.util.ArrayList;
@@ -50,14 +51,12 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         SensorEventListener, LocationListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener{
+        GoogleApiClient.OnConnectionFailedListener {
 
     final static String TAG = "ARActivity";
     private SurfaceView surfaceView;
@@ -77,13 +76,16 @@ public class MainActivity extends AppCompatActivity
 
     private LocationManager locationManager;
     public Location location;
+    private LocationRequest mLocationRequest;
+    private GoogleApiClient mGoogleApiClient;
     boolean isGPSEnabled;
     boolean isNetworkEnabled;
     boolean locationServiceAvailable;
 
-    double latitude;
-    double longitude;
+    double latitude, prevlatitude;
+    double longitude, prevlongitude;
     private int PROXIMITY_RADIUS = 500;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,28 +113,24 @@ public class MainActivity extends AppCompatActivity
 
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
             @Override
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
-                // code here will execute once the drawer is opened( As I dont want anything happened whe drawer is
-                // open I am not going to put anything here)
             }
 
             @Override
-            public void onDrawerSlide(View drawerView, float slideOffset)
-            {
+            public void onDrawerSlide(View drawerView, float slideOffset) {
                 super.onDrawerSlide(drawerView, slideOffset);
                 drawer.bringChildToFront(drawerView);
                 drawer.requestLayout();
             }
+
             @Override
             public void onDrawerClosed(View drawerView) {
                 super.onDrawerClosed(drawerView);
-                // Code here will execute once drawer is closed
             }
         };
-
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
@@ -140,43 +138,31 @@ public class MainActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
     }
 
-    private void build_retrofit_and_get_response(String type) {
-        String url = "https://maps.googleapis.com/maps/";
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(url)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        RetrofitMaps service = retrofit.create(RetrofitMaps.class);
-        Call<Example> call = service.getNearbyPlaces(type, latitude + "," + longitude, PROXIMITY_RADIUS);
-        call.enqueue(new Callback<Example>() {
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(LocationServices.API).build();
+        mGoogleApiClient.connect();
+    }
+
+    public void findPlaces(String placeType) {
+        if (prevlatitude != latitude && prevlongitude != longitude) {
+            arPoints.clear();
+        }
+        Call<NearByApiResponse> call = MyApplication.getApp().getApiService().getNearbyPlaces(placeType, location.getLatitude() + "," + location.getLongitude(), PROXIMITY_RADIUS);
+        call.enqueue(new Callback<NearByApiResponse>() {
             @Override
-            public void onResponse(Call<Example> call, Response<Example> response) {
-
+            public void onResponse(Call<NearByApiResponse> call, Response<NearByApiResponse> response) {
                 try {
-                    //mMap.clear();
+
                     // This loop will go through all the results and add marker on each location.
-
                     for (int i = 0; i < response.body().getResults().size(); i++) {
-                        final Double lat = response.body().getResults().get(i).getGeometry().getLocation().getLat();
-                        final Double lng = response.body().getResults().get(i).getGeometry().getLocation().getLng();
-                        final String placeName = response.body().getResults().get(i).getName();
+                        Double lat = response.body().getResults().get(i).getGeometry().getLocation().getLat();
+                        Double lng = response.body().getResults().get(i).getGeometry().getLocation().getLng();
+                        String placeName = response.body().getResults().get(i).getName();
                         String vicinity = response.body().getResults().get(i).getVicinity();
-                        MarkerOptions markerOptions = new MarkerOptions();
-                        LatLng latLng = new LatLng(lat, lng);
-                        //Toast.makeText(HomeActivity.this, placeName, Toast.LENGTH_SHORT).show();
-
-                        arPoints.add(new ARPoint(placeName,lat, lng, 0));
-                        // Position of Marker on Map
-                        //markerOptions.position(latLng);
-                        // Adding Title to the Marker
-                        //markerOptions.title(placeName + " : " + vicinity);
-                        // Adding Marker to the Camera.
-                        //Marker m = mMap.addMarker(markerOptions);
-                        // Adding colour to the marker
-                        //markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-                        // move map camera
-                        //mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-                        //mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+                        //TODO
+                        if (prevlatitude != latitude && prevlongitude != longitude) {
+                            arPoints.add(new ARPoint(placeName, lat, lng, 0));
+                        }
                     }
                 } catch (Exception e) {
                     Log.d("onResponse", "There is an error");
@@ -185,47 +171,28 @@ public class MainActivity extends AppCompatActivity
             }
 
             @Override
-            public void onFailure(Call<Example> call, Throwable t) {
+            public void onFailure(Call<NearByApiResponse> call, Throwable t) {
                 Log.d("onFailure", t.toString());
+                t.printStackTrace();
+                PROXIMITY_RADIUS += 10000;
             }
         });
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        Log.d("onLocationChanged", "entered");
+        if (location != null) {
+            Log.d("onLocationChanged", "entered");
+            this.location = location;
+            prevlatitude = latitude;
+            prevlongitude = longitude;
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+            findPlaces("schools");
+            //Toast.makeText(MainActivity.this, latitude + "," + longitude, Toast.LENGTH_SHORT).show();
+            Log.d("onLocationChanged", String.format("latitude:%.3f longitude:%.3f", latitude, longitude));
 
-        //mLastLocation = location;
-        //if (mCurrLocationMarker != null) {
-        //    mCurrLocationMarker.remove();
-        //}
-        //Place current location marker
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-
-        Toast.makeText(MainActivity.this, latitude + "," + longitude, Toast.LENGTH_SHORT).show();
-
-        //arPoints.clear();
-        build_retrofit_and_get_response("schools");
-
-        //LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        //MarkerOptions markerOptions = new MarkerOptions();
-        //markerOptions.position(latLng);
-        //markerOptions.title("Current Position");
-
-        // Adding colour to the marker
-        //markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-
-        // Adding Marker to the Map
-        //mCurrLocationMarker = mMap.addMarker(markerOptions);
-
-        //move map camera
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        //mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
-
-        Log.d("onLocationChanged", String.format("latitude:%.3f longitude:%.3f", latitude, longitude));
-
-        Log.d("onLocationChanged", "Exit");
+        }
     }
 
     @Override
@@ -267,17 +234,11 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
-            // Handle the camera action
         } else if (id == R.id.nav_gallery) {
-
         } else if (id == R.id.nav_slideshow) {
-
         } else if (id == R.id.nav_manage) {
-
         } else if (id == R.id.nav_share) {
-
         } else if (id == R.id.nav_send) {
-
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -291,13 +252,10 @@ public class MainActivity extends AppCompatActivity
             float[] rotationMatrixFromVector = new float[16];
             float[] projectionMatrix = new float[16];
             float[] rotatedProjectionMatrix = new float[16];
-
             SensorManager.getRotationMatrixFromVector(rotationMatrixFromVector, sensorEvent.values);
-
             if (arCamera != null) {
                 projectionMatrix = arCamera.getProjectionMatrix();
             }
-
             Matrix.multiplyMM(rotatedProjectionMatrix, 0, projectionMatrix, 0, rotationMatrixFromVector, 0);
             this.arOverlayView.updateRotatedProjectionMatrix(rotatedProjectionMatrix);
         }
@@ -305,42 +263,36 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-
+        startLocationUpdates();
     }
 
     @Override
     public void onConnectionSuspended(int i) {
-
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+        Toast.makeText(this, "Could not connect google api", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
     }
 
     @Override
@@ -356,6 +308,41 @@ public class MainActivity extends AppCompatActivity
         requestCameraPermission();
         registerSensors();
         initAROverlayView();
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted. Do the
+                    // contacts-related task you need to do.
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+                        if (mGoogleApiClient == null) {
+                            buildGoogleApiClient();
+                        }
+                    }
+
+                } else {
+                    Toast.makeText(this, "Location Permission has been denied, can not search the places you want.", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
+    }
+
+    @SuppressLint("RestrictedApi")
+    protected void startLocationUpdates() {
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, (com.google.android.gms.location.LocationListener) this);
+        }
     }
 
     public void requestCameraPermission() {
@@ -486,27 +473,16 @@ public class MainActivity extends AppCompatActivity
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
 
     public boolean checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Asking user if explanation is needed
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
                 // sees the explanation, try again to request the permission.
-
                 //Prompt the user once explanation has been shown
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
-            } else {
-                // No explanation needed, we can request the permission.
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        MY_PERMISSIONS_REQUEST_LOCATION);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+            } else {// No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
             }
             return false;
         } else {
@@ -519,8 +495,7 @@ public class MainActivity extends AppCompatActivity
         int result = googleAPI.isGooglePlayServicesAvailable(this);
         if (result != ConnectionResult.SUCCESS) {
             if (googleAPI.isUserResolvableError(result)) {
-                googleAPI.getErrorDialog(this, result,
-                        0).show();
+                googleAPI.getErrorDialog(this, result, 0).show();
             }
             return false;
         }

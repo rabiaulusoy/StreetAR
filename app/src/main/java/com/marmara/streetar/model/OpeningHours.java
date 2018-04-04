@@ -1,14 +1,16 @@
-package com.marmara.streetar.POJO;
+package com.marmara.streetar.model;
 
-/**
- * Created by r_rab on 3/13/2018.
- */
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Created by Parth Dave on 31/3/17.
+ * Spaceo Technologies Pvt Ltd.
+ * parthd.spaceo@gmail.com
+ */
 public class OpeningHours {
 
     @SerializedName("open_now")
