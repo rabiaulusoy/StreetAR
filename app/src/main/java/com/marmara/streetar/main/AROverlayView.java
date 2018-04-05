@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.location.Location;
 import android.opengl.Matrix;
+import android.util.Log;
 import android.view.View;
 
 import com.marmara.streetar.R;
@@ -23,6 +24,7 @@ public class AROverlayView extends View {
     Context context;
     private float[] rotatedProjectionMatrix = new float[16];
     private Location currentLocation;
+    public final int rad = 1000;
 
     public AROverlayView(Context context) {
         super(context);
@@ -30,8 +32,12 @@ public class AROverlayView extends View {
         this.context = context;
 
         //Demo points
-        //HomeActivity.arPoints.add(new ARPoint("Marmara University",41.0411299, 28.9964835, 0));
-            //add(new ARPoint("Dolmabahçe Sarayı", 41.0411299, 28.9964835, 0));
+//        MainActivity.arPoints.add(new ARPoint("Ben",40.9767,29.1145, 0));
+//        MainActivity.arPoints.add(new ARPoint("1",40.9767989,29.1142503, 0));
+//        MainActivity.arPoints.add(new ARPoint("2",40.9761111,29.1153741, 0));
+//        MainActivity.arPoints.add(new ARPoint("3",40.9774156,29.1139304, 0));
+//        MainActivity.arPoints.add(new ARPoint("4",40.9796915,29.1105926, 0));
+        //add(new ARPoint("Dolmabahçe Sarayı", 41.0411299, 28.9964835, 0));
     }
 
     public void updateRotatedProjectionMatrix(float[] rotatedProjectionMatrix) {
@@ -79,14 +85,16 @@ public class AROverlayView extends View {
 
                 Bitmap _scratch = BitmapFactory.decodeResource(getResources(),
                         R.mipmap.ic_launcher_foreground);
-                if(distAtoB < 1000){
-
-                    Bitmap scaledBitmap = scaleDown(_scratch, (_scratch.getWidth()/(distAtoB/200)) , true);
+                if(distAtoB < rad) {
+                    //least poi size = 50
+                    double basedistance =(rad/(distAtoB+1))/(_scratch.getWidth()-130)*100   + 60;
+                    double boyut = (_scratch.getWidth() / (distAtoB) + 50);
+                    Bitmap scaledBitmap = scaleDown(_scratch, basedistance, true);
                     canvas.drawBitmap(scaledBitmap, x, y, null);
+                    Log.d("Boyut: ", "boyut: " + boyut + " Distance: " + distAtoB + " denenen: " + basedistance + " Name: " + MainActivity.arPoints.get(i).getName());
                 }
 
-
-                canvas.drawText(MainActivity.arPoints.get(i).getName(), x - (30 * MainActivity.arPoints.get(i).getName().length() / 2), y - 80, paint);
+                canvas.drawText(MainActivity.arPoints.get(i).getName(), x - ((15 * MainActivity.arPoints.get(i).getName().length() )/ 2), y - 20, paint);
                 //Toast.makeText(context, "Current Location Latitude: "+currentLocation.getLatitude()+ " longitude: "+ currentLocation.getLongitude()
                 //        + " altitude: "+ currentLocation.getAltitude()
                 //        + "\nheigt: "+_scratch.getHeight() + "\ndistance:" + distAtoB + " to "+ HomeActivity.arPoints.get(i).getName() , Toast.LENGTH_LONG).show();

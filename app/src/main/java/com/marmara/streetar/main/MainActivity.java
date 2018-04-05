@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity
 
     public void findPlaces(String placeType) {
         if (prevlatitude != latitude && prevlongitude != longitude) {
-            arPoints.clear();
+            //arPoints.clear();
         }
         Call<NearByApiResponse> call = MyApplication.getApp().getApiService().getNearbyPlaces(placeType, location.getLatitude() + "," + location.getLongitude(), PROXIMITY_RADIUS);
         call.enqueue(new Callback<NearByApiResponse>() {
