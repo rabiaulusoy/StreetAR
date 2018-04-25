@@ -17,6 +17,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.SurfaceView;
@@ -86,6 +88,8 @@ public class MainActivity extends AppCompatActivity
     double longitude, prevlongitude;
     private int PROXIMITY_RADIUS = 500;
 
+    Fragment fragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -136,6 +140,12 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+
+        requestLocationPermission();
+        requestCameraPermission();
+        registerSensors();
+        initAROverlayView();
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -201,6 +211,11 @@ public class MainActivity extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
+            surfaceView.setVisibility(View.VISIBLE);
+            requestLocationPermission();
+            requestCameraPermission();
+            registerSensors();
+            initAROverlayView();
             super.onBackPressed();
         }
     }
@@ -231,14 +246,43 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
-        int id = item.getItemId();
+        fragment = null;
+        switch (item.getItemId()) {
+            case R.id.nav_home:
+                surfaceView.setVisibility(View.VISIBLE);
+                requestLocationPermission();
+                requestCameraPermission();
+                registerSensors();
+                initAROverlayView();
+                break;
+            case R.id.nav_favorites:
+                fragment = new FavoritesFragment();
+                releaseCamera();
+                surfaceView.setVisibility(View.GONE);
+                break;
+            case R.id.nav_categories:
+                fragment = new CategoriesFragment();
+                releaseCamera();
+                surfaceView.setVisibility(View.GONE);
+                break;
+            case R.id.nav_settings:
+                fragment = new SettingsFragment();
+                releaseCamera();
+                surfaceView.setVisibility(View.GONE);
+                break;
+            default:
+                surfaceView.setVisibility(View.VISIBLE);
+                requestLocationPermission();
+                requestCameraPermission();
+                registerSensors();
+                initAROverlayView();
+        }
 
-        if (id == R.id.nav_camera) {
-        } else if (id == R.id.nav_gallery) {
-        } else if (id == R.id.nav_slideshow) {
-        } else if (id == R.id.nav_manage) {
-        } else if (id == R.id.nav_share) {
-        } else if (id == R.id.nav_send) {
+        if (fragment != null) {
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            ft.addToBackStack("fragment");
+            ft.replace(R.id.camera_container_layout, fragment);
+            ft.commit();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -304,10 +348,6 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
-        requestLocationPermission();
-        requestCameraPermission();
-        registerSensors();
-        initAROverlayView();
     }
 
 
