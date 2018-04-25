@@ -28,7 +28,7 @@ public class SignupPresenter {
             if(password.length() < 6){
             signupView.passwordLength();
         }
-        else
+        else//
                 auth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
