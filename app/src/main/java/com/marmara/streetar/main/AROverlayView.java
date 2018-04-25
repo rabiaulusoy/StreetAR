@@ -30,14 +30,17 @@ public class AROverlayView extends View {
         super(context);
 
         this.context = context;
-
+/*
         //Demo points
-//        MainActivity.arPoints.add(new ARPoint("Ben",40.9767,29.1145, 0));
-//        MainActivity.arPoints.add(new ARPoint("1",40.9767989,29.1142503, 0));
-//        MainActivity.arPoints.add(new ARPoint("2",40.9761111,29.1153741, 0));
-//        MainActivity.arPoints.add(new ARPoint("3",40.9774156,29.1139304, 0));
-//        MainActivity.arPoints.add(new ARPoint("4",40.9796915,29.1105926, 0));
-        //add(new ARPoint("Dolmabahçe Sarayı", 41.0411299, 28.9964835, 0));
+        MainActivity.arPoints.add(new ARPoint("Ben burdayımmmmm",40.9767,29.1145, 0));
+        MainActivity.arPoints.add(new ARPoint("1",40.9767989,29.1142503, 0));
+        MainActivity.arPoints.add(new ARPoint("2",40.9761111,29.1153741, 0));
+        MainActivity.arPoints.add(new ARPoint("3",40.9774156,29.1139304, 0));
+        MainActivity.arPoints.add(new ARPoint("4",40.9796915,29.1105926, 0));
+        MainActivity.arPoints.add(new ARPoint("5",40.9786915,29.1105926, 0));
+        MainActivity.arPoints.add(new ARPoint("6",40.9776915,29.1105926, 0));
+        MainActivity.arPoints.add(new ARPoint("7",40.9766915,29.1105926, 0));
+        //add(new ARPoint("Dolmabahçe Sarayı", 41.0411299, 28.9964835, 0));*/
     }
 
     public void updateRotatedProjectionMatrix(float[] rotatedProjectionMatrix) {
@@ -94,7 +97,7 @@ public class AROverlayView extends View {
                     Log.d("Boyut: ", "boyut: " + boyut + " Distance: " + distAtoB + " denenen: " + basedistance + " Name: " + MainActivity.arPoints.get(i).getName());
                 }
 
-                canvas.drawText(MainActivity.arPoints.get(i).getName(), x - ((15 * MainActivity.arPoints.get(i).getName().length() )/ 2), y - 20, paint);
+                canvas.drawText(MainActivity.arPoints.get(i).getName(), (float) (x -  MainActivity.arPoints.get(i).getName().length()), y - 10, paint);
                 //Toast.makeText(context, "Current Location Latitude: "+currentLocation.getLatitude()+ " longitude: "+ currentLocation.getLongitude()
                 //        + " altitude: "+ currentLocation.getAltitude()
                 //        + "\nheigt: "+_scratch.getHeight() + "\ndistance:" + distAtoB + " to "+ HomeActivity.arPoints.get(i).getName() , Toast.LENGTH_LONG).show();

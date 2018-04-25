@@ -54,6 +54,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static android.support.graphics.drawable.PathInterpolatorCompat.EPSILON;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         SensorEventListener, LocationListener, OnMapReadyCallback,
@@ -69,12 +71,18 @@ public class MainActivity extends AppCompatActivity
     protected static List<ARPoint> arPoints;
     //private TextView tvCurrentLocation;
 
+
     private SensorManager sensorManager;
+    private List<Sensor> sensors;
+    //private Sensor sensorGrav, sensorMag; //low pass filter için kullanılan hardware sensörler için
+
     private final static int REQUEST_CAMERA_PERMISSIONS_CODE = 11;
     public static final int REQUEST_LOCATION_PERMISSIONS_CODE = 0;
 
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 0; // 10 meters
     private static final long MIN_TIME_BW_UPDATES = 0;//1000 * 60 * 1; // 1 minute
+
+    static final float ALPHA = 0.5f; //for low-pass filtering
 
     private LocationManager locationManager;
     public Location location;
@@ -292,6 +300,23 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            float[] rotationMatrixFromVector = new float[16];
+            float[] projectionMatrix = new float[16];
+            float[] rotatedProjectionMatrix = new float[16];
+            float[] myRotationVector;
+            myRotationVector = sensorEvent.values.clone();
+            myRotationVector = lowPass(sensorEvent.values.clone(),myRotationVector);
+            SensorManager.getRotationMatrixFromVector(rotationMatrixFromVector, myRotationVector);
+            if (arCamera != null) {
+                projectionMatrix = arCamera.getProjectionMatrix();
+            }
+            Matrix.multiplyMM(rotatedProjectionMatrix, 0, projectionMatrix, 0, rotationMatrixFromVector, 0);
+            this.arOverlayView.updateRotatedProjectionMatrix(rotatedProjectionMatrix);
+        }
+        /*
+        //En pure hali
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
             float[] rotationMatrixFromVector = new float[16];
             float[] projectionMatrix = new float[16];
@@ -302,7 +327,80 @@ public class MainActivity extends AppCompatActivity
             }
             Matrix.multiplyMM(rotatedProjectionMatrix, 0, projectionMatrix, 0, rotationMatrixFromVector, 0);
             this.arOverlayView.updateRotatedProjectionMatrix(rotatedProjectionMatrix);
+        }*/
+
+        /*
+        //Bu asıl low pass filter fakat çalışmadı ilginçtir ki
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            myRotationVector = lowPass(sensorEvent.values.clone(),myRotationVector);
+
+            linear_acceleration[0] = sensorEvent.values[0] - myRotationVector[0];
+            linear_acceleration[1] = sensorEvent.values[1] - myRotationVector[1];
+            linear_acceleration[2] = sensorEvent.values[2] - myRotationVector[2];
+
+
+
+            SensorManager.getRotationMatrixFromVector(rotationMatrixFromVector,linear_acceleration );
+            if (arCamera != null) {
+                projectionMatrix = arCamera.getProjectionMatrix();
+            }
+            Matrix.multiplyMM(rotatedProjectionMatrix, 0, projectionMatrix, 0, rotationMatrixFromVector, 0);
+            this.arOverlayView.updateRotatedProjectionMatrix(rotatedProjectionMatrix);
+        }else if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+            myRotationVector = sensorEvent.values.clone();
+            // This time step's delta rotation to be multiplied by the current rotation
+            // after computing it from the gyro sample data.
+            if (timestamp != 0) {
+                final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
+                // Axis of the rotation sample, not normalized yet.
+                float axisX = sensorEvent.values[0];
+                float axisY = sensorEvent.values[1];
+                float axisZ = sensorEvent.values[2];
+
+                // Calculate the angular speed of the sample
+                float omegaMagnitude = (float)Math.sqrt(axisX * axisX + axisY * axisY + axisZ * axisZ);
+
+                // Normalize the rotation vector if it's big enough to get the axis
+                if (omegaMagnitude > EPSILON) {
+                    axisX /= omegaMagnitude;
+                    axisY /= omegaMagnitude;
+                    axisZ /= omegaMagnitude;
+                }
+
+                // Integrate around this axis with the angular speed by the time step
+                // in order to get a delta rotation from this sample over the time step
+                // We will convert this axis-angle representation of the delta rotation
+                // into a quaternion before turning it into the rotation matrix.
+                float thetaOverTwo = omegaMagnitude * dT / 2.0f;
+                float sinThetaOverTwo = (float) Math.sin(thetaOverTwo);
+                float cosThetaOverTwo = (float) Math.cos(thetaOverTwo);
+
+                linear_acceleration[0] = sinThetaOverTwo * axisX;
+                linear_acceleration[1] = sinThetaOverTwo * axisY;
+                linear_acceleration[2] = sinThetaOverTwo * axisZ;
+                //linear_acceleration[3] = cosThetaOverTwo;
+            }
+            timestamp = sensorEvent.timestamp;
+            SensorManager.getRotationMatrixFromVector(rotationMatrixFromVector,linear_acceleration );
+            if (arCamera != null) {
+                projectionMatrix = arCamera.getProjectionMatrix();
+            }
+            Matrix.multiplyMM(rotatedProjectionMatrix, 0, projectionMatrix, 0, rotationMatrixFromVector, 0);
+            this.arOverlayView.updateRotatedProjectionMatrix(rotatedProjectionMatrix);
+
+
+        }*/
+
+    }
+
+
+    protected float[] lowPass( float[] input, float[] output ) {
+        if ( output == null ) return input;
+
+        for ( int i=0; i<input.length; i++ ) {
+            output[i] = ALPHA*output[i] + (1-ALPHA) * input[i];
         }
+        return output;
     }
 
     @Override
@@ -343,6 +441,10 @@ public class MainActivity extends AppCompatActivity
     protected void onPause() {
         releaseCamera();
         super.onPause();
+        //Burası da esas low pass filter çalışsa gerekli olacaktı
+        /*sensorManager.unregisterListener(this, sensorGrav);
+        sensorManager.unregisterListener(this, sensorMag);
+        sensorManager = null;*/
     }
 
     @Override
@@ -398,6 +500,21 @@ public class MainActivity extends AppCompatActivity
         sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
                 SensorManager.SENSOR_DELAY_FASTEST);
+        // Low pass filter için hardware sensorleri initialize ediliyor.
+        /*//sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        sensors = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+        if (sensors.size() > 0) {
+            sensorGrav = sensors.get(0);
+        }
+
+        sensors = sensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
+        if (sensors.size() > 0) {
+            sensorMag = sensors.get(0);
+        }
+
+        sensorManager.registerListener(this, sensorGrav, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorMag, SensorManager.SENSOR_DELAY_NORMAL);*/
     }
 
     public void initAROverlayView() {
