@@ -19,8 +19,7 @@ public class MyApplication extends Application {
         super.onCreate();
         app = this;
     }
-    
-    
+
     public NearByApi getApiService() {
         if (nearByApi == null) {
             HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
