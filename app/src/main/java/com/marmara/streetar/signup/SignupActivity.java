@@ -9,6 +9,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.marmara.streetar.R;
 import com.marmara.streetar.login.LoginActivity;
 
@@ -27,6 +29,7 @@ public class SignupActivity extends Activity implements SignupView {
     SignupPresenter signupPresenter;
     ProgressDialog progressDialog;
     FirebaseAuth auth;
+    DatabaseReference databaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,8 @@ public class SignupActivity extends Activity implements SignupView {
         String password = etPassword.getText().toString();
         String email = etEmail.getText().toString();
         auth = FirebaseAuth.getInstance();
-        signupPresenter.performSignup(email, username, password,auth);
+        databaseReference=FirebaseDatabase.getInstance().getReference();
+        signupPresenter.performSignup(email, username, password,auth,databaseReference);
     }
 
     @Override
@@ -67,6 +71,7 @@ public class SignupActivity extends Activity implements SignupView {
     @Override
     public void signupSuccess() {
         progressDialog.dismiss();
+
         Toast.makeText(getApplicationContext(), "Signup Success", Toast.LENGTH_SHORT).show();
         Intent i = new Intent(this, LoginActivity.class);
         startActivity(i);
