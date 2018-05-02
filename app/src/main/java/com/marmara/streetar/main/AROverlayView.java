@@ -10,10 +10,13 @@ import android.graphics.Typeface;
 import android.location.Location;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import com.marmara.streetar.R;
 import com.marmara.streetar.helper.LocationHelper;
+import com.marmara.streetar.main.pages.HomeFragment;
 import com.marmara.streetar.model.ARPoint;
 
 import java.util.ArrayList;
@@ -25,9 +28,44 @@ public class AROverlayView extends View {
     private Location currentLocation;
     public final int rad = 1000;
 
+    ///////
+   // ARCamera arcamera;
+    MainActivity main;
+    //////
+
     public AROverlayView(Context context) {
         super(context);
         this.context = context;
+
+        MainPresenter.arPoints.add(new ARPoint("Şükrü Saraçoğlu",40.9876934,29.0343761,  0));//
+        MainPresenter.arPoints.add(new ARPoint("Marmara University", 40.9860149,29.0505564, 0));//
+        MainPresenter.arPoints.add(new ARPoint("Dr.RanaBeşeSağlıkPolikinliği", 40.9868248,29.0474772, 0));//
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+       /* HomeFragment.arCamera.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                for (int i = 0; i < MainPresenter.arPoints.size(); i++) {
+                    if ((int) event.getX() < MainPresenter.arPoints.get(i).getX_start() && ((int) event.getX() + 100) > MainPresenter.arPoints.get(i).getX_start()) {
+                        if ((int) event.getY() <= MainPresenter.arPoints.get(i).getY_start() && ((int) event.getY() + 100) > MainPresenter.arPoints.get(i).getY_start()) {
+                           //Toast.makeText(context, "match Found its " + dataView.places[i], Toast.LENGTH_SHORT).show();
+                            Log.e("TOUCHED", "POI: " + i );
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        });*/
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
     }
 
     public void updateRotatedProjectionMatrix(float[] rotatedProjectionMatrix) {
@@ -39,6 +77,8 @@ public class AROverlayView extends View {
         this.currentLocation = currentLocation;
         this.invalidate();
     }
+
+
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -72,20 +112,48 @@ public class AROverlayView extends View {
                 float x = (0.5f + cameraCoordinateVector[0] / cameraCoordinateVector[3]) * canvas.getWidth();
                 float y = (0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight();
 
+
                 Bitmap _scratch = BitmapFactory.decodeResource(getResources(),
                         R.mipmap.ic_launcher_foreground);
-                if(distAtoB < rad) {
+              //  if(distAtoB < rad) {
                     //least poi size = 50
                     double basedistance =(rad/(distAtoB+1))/(_scratch.getWidth()-130)*100   + 60;
                     double boyut = (_scratch.getWidth() / (distAtoB) + 50);
                     Bitmap scaledBitmap = scaleDown(_scratch, basedistance, true);
+                    MainPresenter.arPoints.get(i).setSize(basedistance);
+                    MainPresenter.arPoints.get(i).setX_start(x);
+                    MainPresenter.arPoints.get(i).setY_start(y);
                     canvas.drawBitmap(scaledBitmap, x, y, null);
                     Log.d("Boyut: ", "boyut: " + boyut + " Distance: " + distAtoB +
                             " denenen: " + basedistance + " Name: " + MainPresenter.arPoints.get(i).getName());
                 }
-            }
+            //}
         }
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event)
+    {
+        float x = event.getX();
+        float y = event.getY();
+        switch(event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                for (int i = 0; i < MainPresenter.arPoints.size(); i++) {
+                    if (((int) event.getX() > MainPresenter.arPoints.get(i).getX_start()) && ( ( MainPresenter.arPoints.get(i).getX_start() + MainPresenter.arPoints.get(i).getSize() ) > (int) event.getX()) ){
+                        if ((int) event.getY() >= MainPresenter.arPoints.get(i).getY_start() && (MainPresenter.arPoints.get(i).getY_start()+ MainPresenter.arPoints.get(i).getSize()) > (int) event.getY() ) {
+                            Toast.makeText(context,  MainPresenter.arPoints.get(i).getName(), Toast.LENGTH_SHORT).show();
+                            Log.e("TOUCHED", "POI: " + i );
+
+                        }
+                    }
+                }
+                return true;
+        }
+        return false;
+    }
+
+
 
     public static Bitmap scaleDown(Bitmap realImage, double maxImageSize,
                                    boolean filter) {
@@ -114,4 +182,6 @@ public class AROverlayView extends View {
         //       + (currentLocation.getLatitude()-POILocation.getLocation().getLatitude())*(currentLocation.getLatitude()-POILocation.getLocation().getLatitude()));
         return dist;
     }
+
+
 }
