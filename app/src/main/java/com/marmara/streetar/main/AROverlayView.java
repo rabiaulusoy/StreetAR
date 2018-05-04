@@ -31,13 +31,9 @@ public class AROverlayView extends View {
     private float[] rotatedProjectionMatrix = new float[16];
     private Location currentLocation;
     public final int rad = 1000;
-    static Bitmap _scratch = null;
-    //static boolean forThread;
 
-    ///////
    // ARCamera arcamera;
     MainActivity main;
-    //////
 
     public AROverlayView(Context context) {
         super(context);
@@ -97,7 +93,7 @@ public class AROverlayView extends View {
                     Log.d("Boyut: ", " Distance: " + distAtoB +
                             " denenen: " + basedistance + " Name: " + MainPresenter.arPoints.get(i).getName());
                 }
-            //}
+            }
         }
     }
 
@@ -122,8 +118,6 @@ public class AROverlayView extends View {
         }
         return false;
     }
-
-
 
     public static Bitmap scaleDown(Bitmap realImage, double maxImageSize,
                                    boolean filter) {
