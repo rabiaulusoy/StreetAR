@@ -9,6 +9,8 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.location.Location;
 import android.opengl.Matrix;
+import android.os.AsyncTask;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 
@@ -16,14 +18,18 @@ import com.marmara.streetar.R;
 import com.marmara.streetar.helper.LocationHelper;
 import com.marmara.streetar.model.ARPoint;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 public class AROverlayView extends View {
     Context context;
     private float[] rotatedProjectionMatrix = new float[16];
     private Location currentLocation;
     public final int rad = 1000;
+    static Bitmap _scratch = null;
+    //static boolean forThread;
 
     public AROverlayView(Context context) {
         super(context);
@@ -44,24 +50,22 @@ public class AROverlayView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         Log.d("onDraw", "onDraw running...");
-
         double distAtoB = 0;
         if (currentLocation == null) {
-            return;
+            //return;
         }
-        final int radius = 30;
+        final int radius = 40;
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
         paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
         /*paint.setTextSize(50);*/
 
-        for (int i = 0; i < MainPresenter.arPoints.size() && distAtoB >= 0; i++) {
+        for (int i = 0; i < MainPresenter._scratch.size() && distAtoB >= 0; i++) {
             distAtoB = distance(currentLocation, MainPresenter.arPoints.get(i));
             float[] currentLocationInECEF = LocationHelper.WSG84toECEF(currentLocation);
             float[] pointInECEF = LocationHelper.WSG84toECEF(MainPresenter.arPoints.get(i).getLocation());
             float[] pointInENU = LocationHelper.ECEFtoENU(currentLocation, currentLocationInECEF, pointInECEF);
-
             float[] cameraCoordinateVector = new float[4];
             Matrix.multiplyMV(cameraCoordinateVector, 0, rotatedProjectionMatrix,
                     0, pointInENU, 0);
@@ -70,17 +74,18 @@ public class AROverlayView extends View {
             // if z > 0, the point will display on the opposite
             if (cameraCoordinateVector[2] < 0) {
                 float x = (0.5f + cameraCoordinateVector[0] / cameraCoordinateVector[3]) * canvas.getWidth();
-                float y = (0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight();
+                float y = ((0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight());
 
-                Bitmap _scratch = BitmapFactory.decodeResource(getResources(),
-                        R.mipmap.ic_launcher_foreground);
-                if(distAtoB < rad) {
+                if (distAtoB < rad && MainPresenter._scratch.get(i) != null) {
                     //least poi size = 50
-                    double basedistance =(rad/(distAtoB+1))/(_scratch.getWidth()-130)*100   + 60;
-                    double boyut = (_scratch.getWidth() / (distAtoB) + 50);
-                    Bitmap scaledBitmap = scaleDown(_scratch, basedistance, true);
+                    double basedistance = (rad / (distAtoB + 1)) / (MainPresenter._scratch.get(i).getWidth() - 130) * 100 + 100;
+                    //double boyut = (MainPresenter._scratch.get(i).getWidth() / (distAtoB) + 50);
+                    Bitmap scaledBitmap = scaleDown(MainPresenter._scratch.get(i), basedistance, true);
+                    //canvas.drawCircle(x+20, y+33, radius, paint);
+                    Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background);
+                    canvas.drawBitmap(background, x-27,y-30,null);
                     canvas.drawBitmap(scaledBitmap, x, y, null);
-                    Log.d("Boyut: ", "boyut: " + boyut + " Distance: " + distAtoB +
+                    Log.d("Boyut: ", " Distance: " + distAtoB +
                             " denenen: " + basedistance + " Name: " + MainPresenter.arPoints.get(i).getName());
                 }
             }

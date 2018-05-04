@@ -3,9 +3,12 @@ package com.marmara.streetar.main;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -19,7 +22,12 @@ import com.marmara.streetar.MyApplication;
 import com.marmara.streetar.main.pages.HomeFragment;
 import com.marmara.streetar.model.ARPoint;
 import com.marmara.streetar.model.NearByApiResponse;
+import com.marmara.streetar.model.Result;
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,35 +51,45 @@ public class MainPresenter {
     AROverlayView arOverlayView;
     TextView tvCurrentLocation;
     public static List<ARPoint> arPoints;
+    public static List<Result> placeResults;
+    public static List<Bitmap> _scratch;
+    static boolean forThread;
+    boolean first = true;
 
     double latitude, prevlatitude;
     double longitude, prevlongitude;
+    double threshold = 0.000001;
 
     public MainPresenter(MainView mainView) {
         this.mainView = mainView;
         this.arPoints = new ArrayList<ARPoint>();
+        this._scratch = new ArrayList<Bitmap>();
     }
 
     public List<ARPoint> getAllPlaces(Location location) {
-        if (prevlatitude != latitude && prevlongitude != longitude) {
-            arPoints.clear();
-        }
         Call<NearByApiResponse> call = MyApplication.getApp().getApiService().getNearbyPlaces("", location.getLatitude() + "," + location.getLongitude(), PROXIMITY_RADIUS);
         call.enqueue(new Callback<NearByApiResponse>() {
             @Override
             public void onResponse(Call<NearByApiResponse> call, Response<NearByApiResponse> response) {
                 try {
+                    arPoints.clear();
+                    _scratch.clear();
+                    placeResults = response.body().getResults();
                     // This loop will go through all the results and add marker on each location.
                     for (int i = 0; i < response.body().getResults().size(); i++) {
                         Double lat = response.body().getResults().get(i).getGeometry().getLocation().getLat();
                         Double lng = response.body().getResults().get(i).getGeometry().getLocation().getLng();
                         String placeName = response.body().getResults().get(i).getName();
                         String vicinity = response.body().getResults().get(i).getVicinity();
-                        //TODO
-                        if (prevlatitude != latitude && prevlongitude != longitude) {
-                            arPoints.add(new ARPoint(placeName, lat, lng, 0));
-                        }
 
+                        arPoints.add(new ARPoint(placeName, lat, lng, 0));
+
+                        forThread = true;
+                        LoadBitmap loadBitmap = new LoadBitmap(i);
+                        loadBitmap.execute();
+                        while (forThread) {
+                            Log.e("in while:", "*");
+                        }
                     }
                 } catch (Exception e) {
                     Log.d("onResponse", "There is an error");
@@ -112,14 +130,19 @@ public class MainPresenter {
                     @Override
                     public void onLocationChanged(Location location) {
                         //TODO define a location threshold
-                        Log.d("onLocationChanged", String.format("latitude:%.3f longitude:%.3f", latitude, longitude));
+                        Log.d("onLocationChanged", "onLocationChanged: " + String.format("latitude:%.3f longitude:%.3f", latitude, longitude));
                         prevlatitude = latitude;
                         prevlongitude = longitude;
                         latitude = location.getLatitude();
                         longitude = location.getLongitude();
                         updateLatestLocation();
-                        Toast.makeText(activity, "Places are getting...", Toast.LENGTH_LONG).show();
-                        arPoints = getAllPlaces(location);
+                        //Toast.makeText(activity, "Places are getting...", Toast.LENGTH_LONG).show();
+
+                        if (Math.abs(prevlatitude - latitude) < threshold || Math.abs(prevlongitude - longitude) < threshold
+                                || first == true ) {
+                            arPoints = getAllPlaces(location);
+                            first = false;
+                        }
                     }
 
                     @Override
@@ -186,5 +209,42 @@ public class MainPresenter {
             ((ViewGroup) arOverlayView.getParent()).removeView(arOverlayView);
         }
         cameraContainerLayout.addView(arOverlayView);
+    }
+
+
+    public class LoadBitmap extends AsyncTask<Bitmap, Integer, Bitmap> {
+        Bitmap _scratch;
+        Integer i;
+
+        private LoadBitmap(int i) {
+            this.i = i;
+        }
+
+        @Override
+        protected Bitmap doInBackground(Bitmap... params) {
+            try {
+                forThread = false;
+                URL url = new URL(MainPresenter.placeResults.get(i).getIcon());
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                if (conn.getResponseCode() != 200) {
+                    Log.e("ERROR:", "not 200!");
+                }
+                conn.connect();
+                InputStream is = conn.getInputStream();
+
+                BufferedInputStream bis = new BufferedInputStream(is);
+                try {
+                    _scratch = BitmapFactory.decodeStream(bis);
+                    MainPresenter._scratch.add(_scratch);
+                } catch (OutOfMemoryError ex) {
+                    _scratch = null;
+                }
+                bis.close();
+                is.close();
+            } catch (Exception e) {
+                Log.e("Exception:", "***********");
+            }
+            return _scratch;
+        }
     }
 }
