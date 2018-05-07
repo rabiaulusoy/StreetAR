@@ -12,21 +12,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
-import com.marmara.streetar.main.pages.CategoriesFragment;
 import com.marmara.streetar.R;
 import com.marmara.streetar.main.pages.FavoritesFragment;
 import com.marmara.streetar.main.pages.HomeFragment;
 import com.marmara.streetar.main.pages.SettingsFragment;
-import com.marmara.streetar.model.ARPoint;
 
-import java.util.List;
+import static com.marmara.streetar.main.MainPresenter.location;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener{
+        implements NavigationView.OnNavigationItemSelectedListener, MainView{
 
     Fragment fragment;
-    protected static List<ARPoint> arPoints;
+    DrawerLayout drawer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +34,7 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
             @Override
@@ -91,8 +90,32 @@ public class MainActivity extends AppCompatActivity
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        MainPresenter mainPresenter = new MainPresenter(this);
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.all) {
+            Toast.makeText(this,"All place types are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("",MainPresenter.location);
+            return true;
+        }if (id == R.id.restaurant) {
+            Toast.makeText(this,"Restaurants are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("restaurant",MainPresenter.location);
+            return true;
+        }if (id == R.id.bank){
+            Toast.makeText(this,"Banks are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("bank",MainPresenter.location);if (id == R.id.cafe) {
+                return true;
+            }
+        }if (id == R.id.school) {
+            Toast.makeText(this,"Schools are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("school",MainPresenter.location);
+            return true;
+        }if (id == R.id.hospital) {
+            Toast.makeText(this,"Hospitals are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("hospital",MainPresenter.location);
+            return true;
+        }if (id == R.id.cafe) {
+            Toast.makeText(this,"Cafes are loading...",Toast.LENGTH_SHORT).show();
+            MainPresenter.arPoints = mainPresenter.getPlaces("cafe",MainPresenter.location);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -109,9 +132,6 @@ public class MainActivity extends AppCompatActivity
                 break;
             case R.id.nav_favorites:
                 fragment = new FavoritesFragment();
-                break;
-            case R.id.nav_categories:
-                fragment = new CategoriesFragment();
                 break;
             case R.id.nav_settings:
                 fragment = new SettingsFragment();

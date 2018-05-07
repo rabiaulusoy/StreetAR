@@ -32,7 +32,7 @@ public class AROverlayView extends View {
     private Location currentLocation;
     public final int rad = 1000;
 
-   // ARCamera arcamera;
+    // ARCamera arcamera;
     MainActivity main;
 
     public AROverlayView(Context context) {
@@ -53,7 +53,7 @@ public class AROverlayView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        Log.d("onDraw", "onDraw running...");
+        //Log.d("onDraw", "onDraw running...");
 
         double distAtoB = 0;
         if (currentLocation == null) {
@@ -65,51 +65,53 @@ public class AROverlayView extends View {
         paint.setColor(Color.WHITE);
         paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
         /*paint.setTextSize(50);*/
+        if (MainPresenter.arPoints.size() == MainPresenter._scratch.size()) {
+            for (int i = 0; i < MainPresenter._scratch.size() && distAtoB >= 0; i++) {
+                distAtoB = distance(currentLocation, MainPresenter.arPoints.get(i));
+                float[] currentLocationInECEF = LocationHelper.WSG84toECEF(currentLocation);
+                float[] pointInECEF = LocationHelper.WSG84toECEF(MainPresenter.arPoints.get(i).getLocation());
+                float[] pointInENU = LocationHelper.ECEFtoENU(currentLocation, currentLocationInECEF, pointInECEF);
+                float[] cameraCoordinateVector = new float[4];
+                Matrix.multiplyMV(cameraCoordinateVector, 0, rotatedProjectionMatrix,
+                        0, pointInENU, 0);
 
-        for (int i = 0; i < MainPresenter._scratch.size() && distAtoB >= 0; i++) {
-            distAtoB = distance(currentLocation, MainPresenter.arPoints.get(i));
-            float[] currentLocationInECEF = LocationHelper.WSG84toECEF(currentLocation);
-            float[] pointInECEF = LocationHelper.WSG84toECEF(MainPresenter.arPoints.get(i).getLocation());
-            float[] pointInENU = LocationHelper.ECEFtoENU(currentLocation, currentLocationInECEF, pointInECEF);
-            float[] cameraCoordinateVector = new float[4];
-            Matrix.multiplyMV(cameraCoordinateVector, 0, rotatedProjectionMatrix,
-                    0, pointInENU, 0);
+                // cameraCoordinateVector[2] is z, that always less than 0 to display on right position
+                // if z > 0, the point will display on the opposite
+                if (cameraCoordinateVector[2] < 0) {
+                    float x = (0.5f + cameraCoordinateVector[0] / cameraCoordinateVector[3]) * canvas.getWidth();
+                    float y = ((0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight());
 
-            // cameraCoordinateVector[2] is z, that always less than 0 to display on right position
-            // if z > 0, the point will display on the opposite
-            if (cameraCoordinateVector[2] < 0) {
-                float x = (0.5f + cameraCoordinateVector[0] / cameraCoordinateVector[3]) * canvas.getWidth();
-                float y = ((0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight());
-
-                if (distAtoB < rad && MainPresenter._scratch.get(i) != null) {
-                    //least poi size = 50
-                    double basedistance = (rad / (distAtoB + 1)) / (MainPresenter._scratch.get(i).getWidth() - 130) * 100 + 100;
-                    //double boyut = (MainPresenter._scratch.get(i).getWidth() / (distAtoB) + 50);
-                    Bitmap scaledBitmap = scaleDown(MainPresenter._scratch.get(i), basedistance, true);
-                    //canvas.drawCircle(x+20, y+33, radius, paint);
-                    Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background);
-                    canvas.drawBitmap(background, x-27,y-30,null);
-                    canvas.drawBitmap(scaledBitmap, x, y, null);
-                    Log.d("Boyut: ", " Distance: " + distAtoB +
-                            " denenen: " + basedistance + " Name: " + MainPresenter.arPoints.get(i).getName());
+                    if (distAtoB < rad && MainPresenter._scratch.get(i) != null) {
+                        //least poi size = 50
+                        double basedistance = (rad / (distAtoB + 1)) / (MainPresenter._scratch.get(i).getWidth() - 130) * 100 + 100;
+                        //double boyut = (MainPresenter._scratch.get(i).getWidth() / (distAtoB) + 50);
+                        Bitmap scaledBitmap = scaleDown(MainPresenter._scratch.get(i), basedistance, true);
+                        MainPresenter.arPoints.get(i).setSize(basedistance);
+                        MainPresenter.arPoints.get(i).setX_start(x);
+                        MainPresenter.arPoints.get(i).setY_start(y);
+                        //canvas.drawCircle(x+20, y+33, radius, paint);
+                        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background);
+                        canvas.drawBitmap(background, x - 27, y - 30, null);
+                        canvas.drawBitmap(scaledBitmap, x, y, null);
+                        //Log.d("Boyut: ", " Distance: " + distAtoB +
+                        //       " denenen: " + basedistance + " Name: " + MainPresenter.placeResults.get(i).getName());
+                    }
                 }
             }
         }
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent event)
-    {
+    public boolean onTouchEvent(MotionEvent event) {
         float x = event.getX();
         float y = event.getY();
-        switch(event.getAction())
-        {
+        switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 for (int i = 0; i < MainPresenter.arPoints.size(); i++) {
-                    if (((int) event.getX() > MainPresenter.arPoints.get(i).getX_start()) && ( ( MainPresenter.arPoints.get(i).getX_start() + MainPresenter.arPoints.get(i).getSize() ) > (int) event.getX()) ){
-                        if ((int) event.getY() >= MainPresenter.arPoints.get(i).getY_start() && (MainPresenter.arPoints.get(i).getY_start()+ MainPresenter.arPoints.get(i).getSize()) > (int) event.getY() ) {
-                            Toast.makeText(context,  MainPresenter.arPoints.get(i).getName(), Toast.LENGTH_SHORT).show();
-                            Log.e("TOUCHED", "POI: " + i );
+                    if (((int) event.getX() > MainPresenter.arPoints.get(i).getX_start()) && ((MainPresenter.arPoints.get(i).getX_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getX())) {
+                        if ((int) event.getY() >= MainPresenter.arPoints.get(i).getY_start() && (MainPresenter.arPoints.get(i).getY_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getY()) {
+                            Toast.makeText(context, MainPresenter.arPoints.get(i).getName(), Toast.LENGTH_SHORT).show();
+                            Log.e("TOUCHED", "POI: " + i);
 
                         }
                     }
@@ -126,10 +128,15 @@ public class AROverlayView extends View {
                 (float) maxImageSize / realImage.getHeight());
         int width = Math.round((float) ratio * realImage.getWidth());
         int height = Math.round((float) ratio * realImage.getHeight());
-
+        if (width < 0 || height < 0 || width == 0 || height == 0) {
+            Log.d("ERROR:", "Bitmap scaleDown * * * * * * * * * * * * *");
+            width = 1;
+            height = 1;
+        }
         Bitmap newBitmap = Bitmap.createScaledBitmap(realImage, width,
                 height, filter);
         return newBitmap;
+
     }
 
     public static double distance(Location currentLocation, ARPoint POILocation) {
@@ -140,7 +147,8 @@ public class AROverlayView extends View {
         double lat2 = POILocation.getLocation().getLatitude();
         double dLon = radTokm * (currentLocation.getLongitude() - POILocation.getLocation().getLongitude());
         double dLat = radTokm * (currentLocation.getLatitude() - POILocation.getLocation().getLatitude());
-        double result = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double result = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) *
+                Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         dist = (float) 2 * Math.atan2(Math.sqrt(result), Math.sqrt(1 - result)) * radius * 1000;
         // dist = (float) Math.sqrt (radTokm*(currentLocation.getLongitude()-POILocation.getLocation().getLongitude())*radTokm*(currentLocation.getLongitude()-POILocation.getLocation().getLongitude())
         //       + (currentLocation.getLatitude()-POILocation.getLocation().getLatitude())*(currentLocation.getLatitude()-POILocation.getLocation().getLatitude()));

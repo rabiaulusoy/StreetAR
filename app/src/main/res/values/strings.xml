@@ -5,7 +5,12 @@
     <string name="nav_header_title">StreetView AR</string>
     <string name="nav_header_subtitle">info@streetar.com</string>
     <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Settings</string>
+    <string name="bank">Bank</string>
+    <string name="restaurant">Restaurant</string>
+    <string name="hospital">Hospital</string>
+    <string name="cafe">Cafe</string>
+    <string name="school">School</string>
+    <string name="all">All Place Types</string>
     <string name="google_maps_key">AIzaSyCdmgnkvCQJCH3t3c1svIuadNvKwsEuY_g</string>
 
     <!-- TODO: Remove or change this placeholder text -->

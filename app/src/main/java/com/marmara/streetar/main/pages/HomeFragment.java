@@ -8,12 +8,15 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
@@ -59,6 +62,7 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("onCreate:", "on CREATE - - - - - - - - - - -");
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -75,7 +79,7 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        Log.d("onViewCreated:", "on VIEW CREATED - - - - - - - - - - -");
         getActivity().setTitle("StreetView AR");
 
         arOverlayView = new AROverlayView(getActivity().getApplicationContext());
@@ -88,10 +92,19 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     @Override
     public void onResume(){
         super.onResume();
-        mainPresenter.requestLocationPermission(this.getActivity(), arOverlayView, tvCurrentLocation);
+        Log.d("onResume:", "on RESUME - - - - - - - - - - -");
+        mainPresenter.requestLocationPermission(this.getActivity(), arOverlayView,
+                tvCurrentLocation, "");
         requestCameraPermission();
         registerSensors();
         mainPresenter.initAROverlayView(cameraContainerLayout);
+    }
+
+    @Override
+    public void onPause() {
+        Log.d("onPause:", "on PAUSE - - - - - - - - - - -");
+        mainPresenter.releaseCamera(camera, arCamera);
+        super.onPause();
     }
 
     public void requestCameraPermission() {
@@ -133,11 +146,6 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     }
 
     @Override
-    public void drawPOIsOnScreen() {
-        //TODO draw places on surface view
-    }
-
-    @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
         if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
             float[] rotationMatrixFromVector = new float[16];
@@ -157,4 +165,5 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+
 }

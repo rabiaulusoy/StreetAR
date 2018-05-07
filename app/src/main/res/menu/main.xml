@@ -2,8 +2,33 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/all"
         android:orderInCategory="100"
-        android:title="@string/action_settings"
+        android:title="@string/all"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/bank"
+        android:orderInCategory="100"
+        android:title="@string/bank"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/restaurant"
+        android:orderInCategory="100"
+        android:title="@string/restaurant"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/cafe"
+        android:orderInCategory="100"
+        android:title="@string/cafe"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/school"
+        android:orderInCategory="100"
+        android:title="@string/school"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/hospital"
+        android:orderInCategory="100"
+        android:title="@string/hospital"
         app:showAsAction="never" />
 </menu>
