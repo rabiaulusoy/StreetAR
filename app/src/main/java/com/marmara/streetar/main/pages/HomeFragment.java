@@ -2,6 +2,7 @@ package com.marmara.streetar.main.pages;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Sensor;
@@ -26,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.marmara.streetar.R;
+import com.marmara.streetar.detail.DetailActivity;
 import com.marmara.streetar.main.ARCamera;
 import com.marmara.streetar.main.AROverlayView;
 import com.marmara.streetar.main.MainPresenter;
@@ -49,7 +51,7 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
 
     private final static int REQUEST_CAMERA_PERMISSIONS_CODE = 11;
 
-    MainPresenter mainPresenter;
+    public static MainPresenter mainPresenter;
     public AROverlayView arOverlayView;
     public ARCamera arCamera;
     public TextView tvCurrentLocation;
@@ -76,6 +78,7 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
         mainPresenter = new MainPresenter(this);
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -90,7 +93,7 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
     }
 
     @Override
-    public void onResume(){
+    public void onResume() {
         super.onResume();
         Log.d("onResume:", "on RESUME - - - - - - - - - - -");
         mainPresenter.requestLocationPermission(this.getActivity(), arOverlayView,
@@ -166,4 +169,12 @@ public class HomeFragment extends Fragment implements MainView, SensorEventListe
 
     }
 
+    @Override
+    public void navigateToDetail(int poiId) {
+        Intent a = new Intent(getContext(), DetailActivity.class);
+        Bundle b = new Bundle();
+        b.putInt("poiId", poiId);
+        a.putExtras(b);
+        startActivity(a);
+    }
 }

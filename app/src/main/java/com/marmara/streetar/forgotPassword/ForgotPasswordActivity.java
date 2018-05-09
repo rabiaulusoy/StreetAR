@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -20,7 +22,7 @@ import butterknife.OnClick;
  * Created by EDA on 12.03.2018.
  */
 
-public class ForgotPasswordActivity extends Activity implements ForgotPasswordView {
+public class ForgotPasswordActivity extends AppCompatActivity implements ForgotPasswordView {
 
     @BindView(R.id.newEmail)
     EditText etEmail;
@@ -41,6 +43,9 @@ public class ForgotPasswordActivity extends Activity implements ForgotPasswordVi
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_forgotpassword);
         ButterKnife.bind(this);
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         /*if(BuildConfig.DEBUG){
             etUsername.setText("test");
@@ -70,8 +75,6 @@ public class ForgotPasswordActivity extends Activity implements ForgotPasswordVi
             //dialog.dismiss();
             Intent i = new Intent(this, LoginActivity.class);
             startActivity(i);
-
-
         }
 
     @Override

@@ -43,6 +43,9 @@
             android:parentActivityName="com.marmara.streetar.login.LoginActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar" ></activity>
+        <activity android:name="com.marmara.streetar.detail.DetailActivity"
+            android:parentActivityName="com.marmara.streetar.main.MainActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar" ></activity>
     </application>
-
 </manifest>

@@ -179,10 +179,10 @@ public class MainPresenter implements LocationListener {
         cameraContainerLayout.addView(arOverlayView);
     }
 
-
     @Override
     public void onLocationChanged(Location location) {
         this.location = location;
+        this.location.setAltitude(0);
         //TODO define a location threshold
         Log.d("onLocationChanged", "onLocationChanged: " + String.format("latitude:%.3f longitude:%.3f", latitude, longitude));
         prevlatitude = latitude;
@@ -201,6 +201,10 @@ public class MainPresenter implements LocationListener {
                 arPoints = getPlaces(this.placeType, location);
             }
         }
+    }
+
+    public void navigateToDetailActivity(int i){
+        mainView.navigateToDetail(i);
     }
 
     @Override
@@ -248,7 +252,7 @@ public class MainPresenter implements LocationListener {
                 bis.close();
                 is.close();
             } catch (Exception e) {
-                Log.e("Exception:", "***********");
+                Log.e("Exception:", "MainPresenter, LoadBitmap ***********");
             }
             return _scratch;
         }

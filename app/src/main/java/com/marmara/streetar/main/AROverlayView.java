@@ -1,6 +1,7 @@
 package com.marmara.streetar.main;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -59,15 +60,24 @@ public class AROverlayView extends View {
         if (currentLocation == null) {
             return;
         }
-        final int radius = 40;
+        final int radius = 80;
+        int color = Color.parseColor("#ff6262");
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.WHITE);
         paint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+        Paint paint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint1.setStyle(Paint.Style.FILL);
+        paint1.setColor(color);
+        paint1.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
         /*paint.setTextSize(50);*/
         if (MainPresenter.arPoints.size() == MainPresenter._scratch.size()) {
             for (int i = 0; i < MainPresenter._scratch.size() && distAtoB >= 0; i++) {
-                distAtoB = distance(currentLocation, MainPresenter.arPoints.get(i));
+                try {
+                    distAtoB = distance(currentLocation, MainPresenter.arPoints.get(i));
+                }catch (Exception e){
+                    Log.e("Error:", "ArOverlayView, distance(), invalid size 20");
+                }
                 float[] currentLocationInECEF = LocationHelper.WSG84toECEF(currentLocation);
                 float[] pointInECEF = LocationHelper.WSG84toECEF(MainPresenter.arPoints.get(i).getLocation());
                 float[] pointInENU = LocationHelper.ECEFtoENU(currentLocation, currentLocationInECEF, pointInECEF);
@@ -89,9 +99,10 @@ public class AROverlayView extends View {
                         MainPresenter.arPoints.get(i).setSize(basedistance);
                         MainPresenter.arPoints.get(i).setX_start(x);
                         MainPresenter.arPoints.get(i).setY_start(y);
-                        //canvas.drawCircle(x+20, y+33, radius, paint);
-                        Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background);
-                        canvas.drawBitmap(background, x - 27, y - 30, null);
+                        canvas.drawCircle(x+50, y+50, radius+10, paint1);
+                        canvas.drawCircle(x+50, y+50, radius, paint);
+                        //Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.untitled);
+                        //canvas.drawBitmap(background, x - 27, y - 30, null);
                         canvas.drawBitmap(scaledBitmap, x, y, null);
                         //Log.d("Boyut: ", " Distance: " + distAtoB +
                         //       " denenen: " + basedistance + " Name: " + MainPresenter.placeResults.get(i).getName());
@@ -111,8 +122,8 @@ public class AROverlayView extends View {
                     if (((int) event.getX() > MainPresenter.arPoints.get(i).getX_start()) && ((MainPresenter.arPoints.get(i).getX_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getX())) {
                         if ((int) event.getY() >= MainPresenter.arPoints.get(i).getY_start() && (MainPresenter.arPoints.get(i).getY_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getY()) {
                             Toast.makeText(context, MainPresenter.arPoints.get(i).getName(), Toast.LENGTH_SHORT).show();
-                            Log.e("TOUCHED", "POI: " + i);
-
+                            Log.d("TOUCHED", "POI: " + i);
+                            HomeFragment.mainPresenter.navigateToDetailActivity(i);
                         }
                     }
                 }
