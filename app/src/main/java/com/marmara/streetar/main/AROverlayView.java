@@ -91,16 +91,22 @@ public class AROverlayView extends View {
                     float x = (0.5f + cameraCoordinateVector[0] / cameraCoordinateVector[3]) * canvas.getWidth();
                     float y = ((0.5f - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight());
 
-                    if (distAtoB < rad && MainPresenter._scratch.get(i) != null) {
+                    double basedistance = (rad / (distAtoB + 1)) / (MainPresenter._scratch.get(i).getWidth()) * 150 + 60;
+
+                    basedistance = basedistance*1.45;
+
+                    y = (float) (((i*basedistance)/canvas.getHeight() - cameraCoordinateVector[1] / cameraCoordinateVector[3]) * canvas.getHeight());
+                    //(float) (basedistance* i) * ((canvas.getHeight()- 100)/canvas.getHeight());
+
+                    if (distAtoB < rad && MainPresenter._scratch.get(i) != null && basedistance > 0) {
                         //least poi size = 50
-                        double basedistance = (rad / (distAtoB + 1)) / (MainPresenter._scratch.get(i).getWidth() - 130) * 100 + 100;
                         //double boyut = (MainPresenter._scratch.get(i).getWidth() / (distAtoB) + 50);
                         Bitmap scaledBitmap = scaleDown(MainPresenter._scratch.get(i), basedistance, true);
                         MainPresenter.arPoints.get(i).setSize(basedistance);
                         MainPresenter.arPoints.get(i).setX_start(x);
                         MainPresenter.arPoints.get(i).setY_start(y);
-                        canvas.drawCircle(x+50, y+50, radius+10, paint1);
-                        canvas.drawCircle(x+50, y+50, radius, paint);
+                        canvas.drawCircle(x+50, y+50, (float) (basedistance + 10), paint1);
+                        canvas.drawCircle(x+50, y+50, (float) (basedistance), paint);
                         //Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.untitled);
                         //canvas.drawBitmap(background, x - 27, y - 30, null);
                         canvas.drawBitmap(scaledBitmap, x, y, null);
