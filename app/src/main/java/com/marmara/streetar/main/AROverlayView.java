@@ -121,9 +121,10 @@ public class AROverlayView extends View {
                 for (int i = 0; i < MainPresenter.arPoints.size(); i++) {
                     if (((int) event.getX() > MainPresenter.arPoints.get(i).getX_start()) && ((MainPresenter.arPoints.get(i).getX_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getX())) {
                         if ((int) event.getY() >= MainPresenter.arPoints.get(i).getY_start() && (MainPresenter.arPoints.get(i).getY_start() + MainPresenter.arPoints.get(i).getSize()) > (int) event.getY()) {
-                            Toast.makeText(context, MainPresenter.arPoints.get(i).getName(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, MainPresenter.arPoints.get(i).getName() +
+                                    "\n" + MainPresenter.placeResults.get(i).getVicinity(), Toast.LENGTH_SHORT).show();
                             Log.d("TOUCHED", "POI: " + i);
-                            HomeFragment.mainPresenter.navigateToDetailActivity(i);
+                            //HomeFragment.mainPresenter.navigateToDetailActivity(i);
                         }
                     }
                 }
